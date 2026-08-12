@@ -49,7 +49,10 @@ test.describe('authentication', () => {
     await page.click('button[type="submit"]');
 
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByText(email)).toBeVisible();
+    // A brand new account lands on a populated Overview rather than an empty screen, because the
+    // unowned sample site is readable by everyone.
+    await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
+    expect(email).toContain('@');
   });
 
   test('wrong credentials do not create a session', async ({ page }) => {

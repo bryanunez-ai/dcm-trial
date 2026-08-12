@@ -3,16 +3,19 @@ import { db } from './drizzle';
 import { users } from './schema';
 import { hashPassword } from '@/lib/auth/session';
 import { DEMO_EMAIL, DEMO_NAME, DEMO_PASSWORD } from '@/lib/demo';
+import { seedSampleSite } from './seed-sample';
 
 /**
- * Seeds the demo account whose credentials are published on the sign-in page.
+ * Seeds the demo account whose credentials are published on the sign-in page, and the sample
+ * site every account can read.
  *
  * Idempotent: re-running resets the demo account's password rather than failing on the unique
- * email constraint. That matters because the account is publicly usable — if a visitor manages
- * to change something, re-running the seed is the recovery path.
+ * email constraint, and regenerates the sample history so its window still ends today. That
+ * matters because the account is publicly usable — if a visitor manages to change something,
+ * re-running the seed is the recovery path.
  *
- * The sample site and the self-tracking site are not seeded here yet — `sites` does not exist
- * until the ingestion milestone. They arrive with it.
+ * `pnpm db:seed-analysis` is deliberately NOT part of this. It spends real money on a real API
+ * call, and a seed script that silently bills you is a bad seed script.
  */
 async function seed() {
   const passwordHash = await hashPassword(DEMO_PASSWORD);
@@ -29,16 +32,20 @@ async function seed() {
       .set({ passwordHash, name: DEMO_NAME, deletedAt: null, updatedAt: new Date() })
       .where(eq(users.id, existing.id));
     console.log(`Demo account reset: ${DEMO_EMAIL}`);
-    return;
+  } else {
+    await db.insert(users).values({
+      email: DEMO_EMAIL,
+      name: DEMO_NAME,
+      passwordHash,
+      role: 'owner',
+    });
+    console.log(`Demo account created: ${DEMO_EMAIL}`);
   }
 
-  await db.insert(users).values({
-    email: DEMO_EMAIL,
-    name: DEMO_NAME,
-    passwordHash,
-    role: 'owner',
-  });
-  console.log(`Demo account created: ${DEMO_EMAIL}`);
+  const sample = await seedSampleSite();
+  console.log(
+    `Sample site seeded: ${sample.events} events across 90 days (site ${sample.siteId}).`
+  );
 }
 
 seed()

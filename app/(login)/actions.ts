@@ -6,11 +6,13 @@ import { db } from '@/lib/db/drizzle';
 import {
   User,
   users,
+  sites,
   activityLogs,
   type NewUser,
   type NewActivityLog,
   ActivityType
 } from '@/lib/db/schema';
+import { isDemoAccount } from '@/lib/demo';
 import { comparePasswords, hashPassword, setSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
@@ -141,6 +143,17 @@ export const updatePassword = validatedActionWithUser(
   async (data, _, user) => {
     const { currentPassword, newPassword, confirmPassword } = data;
 
+    // The demo credentials are published on the sign-in page, so this account is public property.
+    // Without this guard the first visitor to change the password locks out every visitor after
+    // them, and there is no password reset flow to recover with. Enforced here rather than by
+    // hiding the form: hiding a control does not stop the Server Action being called.
+    if (isDemoAccount(user.email)) {
+      return {
+        error:
+          'The demo account cannot change its password — its credentials are published so other reviewers can sign in.'
+      };
+    }
+
     const isPasswordValid = await comparePasswords(
       currentPassword,
       user.passwordHash
@@ -198,6 +211,13 @@ export const deleteAccount = validatedActionWithUser(
   async (data, _, user) => {
     const { password } = data;
 
+    if (isDemoAccount(user.email)) {
+      return {
+        error:
+          'The demo account cannot be deleted — other reviewers need it to sign in.'
+      };
+    }
+
     const isPasswordValid = await comparePasswords(password, user.passwordHash);
     if (!isPasswordValid) {
       return {
@@ -208,13 +228,17 @@ export const deleteAccount = validatedActionWithUser(
 
     await logActivity(user.id, ActivityType.DELETE_ACCOUNT);
 
+    // Delete the user's sites FIRST, which cascades to their events.
+    //
+    // The starter soft-deleted the user and left everything else standing. Once ownership is by
+    // userId, a site belonging to an account nobody can sign in as is invisible in every
+    // dashboard and unreachable by any ownership check — while still accepting pageviews from a
+    // snippet that is presumably still installed on a live page. It would collect data forever
+    // for someone who asked to be forgotten.
+    await db.delete(sites).where(eq(sites.userId, user.id));
+
     // Soft delete. The email is suffixed so the address can be reused by a future signup without
     // colliding with the unique constraint.
-    //
-    // Once sites exist they must be deleted here first, before this row is tombstoned: sites
-    // owned by an account nobody can sign in as are invisible to every dashboard, unreachable by
-    // any ownership check, and still accepting pageviews from a snippet that is presumably still
-    // installed on a live page.
     await db
       .update(users)
       .set({
@@ -237,6 +261,15 @@ export const updateAccount = validatedActionWithUser(
   updateAccountSchema,
   async (data, _, user) => {
     const { name, email } = data;
+
+    // Changing the demo account's email would invalidate the published credentials — and the
+    // isDemoAccount guards elsewhere, which key off that address.
+    if (isDemoAccount(user.email)) {
+      return {
+        error:
+          'The demo account cannot change its name or email — its credentials are published on the sign-in page.'
+      };
+    }
 
     await Promise.all([
       db.update(users).set({ name, email }).where(eq(users.id, user.id)),

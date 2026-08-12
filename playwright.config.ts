@@ -13,8 +13,13 @@ const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
  */
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: ['**/helpers/**', '**/global-teardown.ts'],
+  testIgnore: ['**/helpers/**', '**/global-setup.ts', '**/global-teardown.ts'],
+  globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
+  // The dev server compiles routes on first request, and the dashboard pulls in a charting
+  // library, so a cold route can take several seconds. That is a dev-server property, not a
+  // property of the app, and it should not read as a test failure.
+  expect: { timeout: 15_000 },
   // One worker, shared database: the specs create and delete real rows, so running them in
   // parallel would have them counting each other's events.
   fullyParallel: false,

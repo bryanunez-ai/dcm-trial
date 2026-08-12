@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db/drizzle';
 import { activityLogs, sites, ActivityType } from '@/lib/db/schema';
 import { validatedActionWithUser } from '@/lib/auth/middleware';
-import { generateSiteKey } from '@/lib/analytics/keys';
+import { generateShareToken, generateSiteKey } from '@/lib/analytics/keys';
 import { normalizeDomain } from '@/lib/analytics/normalize';
 import { getOwnedSite, userHasDomain } from '@/lib/sites/queries';
 import { isDemoAccount } from '@/lib/demo';
@@ -57,6 +57,59 @@ export const createSite = validatedActionWithUser(
     });
 
     redirect(`/dashboard/sites/${site.id}/install`);
+  }
+);
+
+const shareSchema = z.object({
+  siteId: z.coerce.number().int().positive()
+});
+
+export const enableSharing = validatedActionWithUser(
+  shareSchema,
+  async (data, _formData, user) => {
+    const site = await getOwnedSite(data.siteId, user.id);
+    if (!site) return { error: 'Site not found.' };
+
+    // Always mint a fresh token, even if one already exists. Re-enabling after a revoke must not
+    // resurrect the old URL — someone revoked it for a reason.
+    const shareToken = generateShareToken();
+
+    await db
+      .update(sites)
+      .set({ shareToken })
+      .where(and(eq(sites.id, site.id), eq(sites.userId, user.id)));
+
+    await db.insert(activityLogs).values({
+      userId: user.id,
+      action: ActivityType.ENABLE_SHARING
+    });
+
+    revalidatePath(`/dashboard/sites/${site.id}/install`);
+    return { success: 'Share link published.' };
+  }
+);
+
+export const disableSharing = validatedActionWithUser(
+  shareSchema,
+  async (data, _formData, user) => {
+    const site = await getOwnedSite(data.siteId, user.id);
+    if (!site) return { error: 'Site not found.' };
+
+    // Cleared, not flagged. A token kept in the row behind an "enabled" boolean is a URL that
+    // still exists — one schema change or one careless query away from working again. Setting it
+    // to null destroys it, so a leaked link is dead permanently rather than merely ignored.
+    await db
+      .update(sites)
+      .set({ shareToken: null })
+      .where(and(eq(sites.id, site.id), eq(sites.userId, user.id)));
+
+    await db.insert(activityLogs).values({
+      userId: user.id,
+      action: ActivityType.DISABLE_SHARING
+    });
+
+    revalidatePath(`/dashboard/sites/${site.id}/install`);
+    return { success: 'Share link revoked. The old URL no longer works.' };
   }
 );
 

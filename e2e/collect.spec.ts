@@ -232,7 +232,6 @@ test.describe('collector', () => {
 
     const host = await startHostPage({
       domain: TRACKER_DOMAIN,
-      appOrigin: 'http://localhost:3000',
       siteKey: trackerSiteKey
     });
 

@@ -75,11 +75,36 @@ export async function getOwnedSite(
   return site ?? null;
 }
 
-export async function getSiteByShareToken(token: string): Promise<Site | null> {
-  if (!token) return null;
+/**
+ * What a public share page is allowed to know about a site.
+ *
+ * Deliberately not the whole row. The site key would otherwise travel into the HTML of a page
+ * anyone with the link can read, and user_id would leak the existence and identity of the owner.
+ * Selecting columns explicitly means a future column cannot silently join them — the type would
+ * have to be widened by hand, which is a decision someone makes rather than one that happens.
+ */
+export type PublicSite = {
+  id: number;
+  name: string;
+  domain: string;
+  isSample: boolean;
+};
+
+export async function getSiteByShareToken(
+  token: string
+): Promise<PublicSite | null> {
+  // An empty or absent token must never match a row. shareToken is null for every site with
+  // sharing disabled, and `= null` matches nothing in SQL, but this is too important to leave to
+  // an implicit rule further down the stack.
+  if (!token || typeof token !== 'string') return null;
 
   const [site] = await db
-    .select()
+    .select({
+      id: sites.id,
+      name: sites.name,
+      domain: sites.domain,
+      isSample: sites.isSample
+    })
     .from(sites)
     .where(eq(sites.shareToken, token))
     .limit(1);

@@ -4,7 +4,8 @@ import { Plus, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getUser } from '@/lib/db/queries';
 import { getVisibleSites } from '@/lib/sites/queries';
-import { getSiteMetrics } from '@/lib/analytics/metrics';
+import { getLiveVisitors, getSiteMetrics } from '@/lib/analytics/metrics';
+import { LiveCounter } from '@/components/analytics/live-counter';
 import { MetricCards } from '@/components/analytics/metric-cards';
 import { TrafficChart } from '@/components/analytics/traffic-chart';
 import { TopPages, TopSources } from '@/components/analytics/breakdown';
@@ -60,7 +61,10 @@ export default async function DashboardPage({
 
   const days = WINDOWS.includes(Number(params.days)) ? Number(params.days) : 30;
 
-  const metrics = await getSiteMetrics(selected.id, days);
+  const [metrics, live] = await Promise.all([
+    getSiteMetrics(selected.id, days),
+    getLiveVisitors(selected.id)
+  ]);
 
   return (
     <section className="flex-1 space-y-6 p-4 lg:p-8">
@@ -93,6 +97,10 @@ export default async function DashboardPage({
           numbers. It accepts no real traffic and cannot be edited or deleted.
         </p>
       )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <LiveCounter siteId={selected.id} initial={live} />
+      </div>
 
       <div className="flex flex-wrap gap-1.5">
         {WINDOWS.map((w) => (

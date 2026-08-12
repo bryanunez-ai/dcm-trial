@@ -20,13 +20,17 @@ export type HostPage = {
   close: () => Promise<void>;
 };
 
+/** Where the app under test lives. Follows E2E_BASE_URL so the suite stays portable. */
+export const APP_ORIGIN = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
+
 export async function startHostPage(options: {
   /** Domain the browser will use. Must be mapped to 127.0.0.1 by the resolver rule. */
   domain: string;
-  /** Where the tracker is served from, e.g. http://localhost:3000 */
-  appOrigin: string;
   siteKey: string;
+  /** Defaults to the app under test; override only to point somewhere else deliberately. */
+  appOrigin?: string;
 }): Promise<HostPage> {
+  const appOrigin = options.appOrigin ?? APP_ORIGIN;
   const server: Server = createServer((req, res) => {
     const path = (req.url ?? '/').split('?')[0];
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
@@ -35,7 +39,7 @@ export async function startHostPage(options: {
   <head>
     <meta charset="utf-8" />
     <title>${path}</title>
-    <script defer src="${options.appOrigin}/nova.js" data-site="${options.siteKey}"></script>
+    <script defer src="${appOrigin}/nova.js" data-site="${options.siteKey}"></script>
   </head>
   <body>
     <h1>${path}</h1>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { getUser } from '@/lib/db/queries';
 import { getOwnedSite } from '@/lib/sites/queries';
 import { CopyableSnippet } from './copyable-snippet';
+import { SharePanel } from './share-panel';
 
 export const metadata: Metadata = { title: 'Install' };
 export const dynamic = 'force-dynamic';
@@ -38,6 +39,11 @@ export default async function InstallPage({
       </div>
 
       <CopyableSnippet snippet={snippet} />
+
+      <SharePanel
+        siteId={site.id}
+        shareUrl={site.shareToken ? `${baseUrl}/share/${site.shareToken}` : null}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-4">

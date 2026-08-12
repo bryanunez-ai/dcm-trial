@@ -4,6 +4,7 @@ import { users } from './schema';
 import { hashPassword } from '@/lib/auth/session';
 import { DEMO_EMAIL, DEMO_NAME, DEMO_PASSWORD } from '@/lib/demo';
 import { seedSampleSite } from './seed-sample';
+import { seedSelfTrackingSite } from './seed-self-tracking';
 
 /**
  * Seeds the demo account whose credentials are published on the sign-in page, and the sample
@@ -42,10 +43,25 @@ async function seed() {
     console.log(`Demo account created: ${DEMO_EMAIL}`);
   }
 
+  const [demo] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, DEMO_EMAIL))
+    .limit(1);
+
   const sample = await seedSampleSite();
   console.log(
     `Sample site seeded: ${sample.events} events across 90 days (site ${sample.siteId}).`
   );
+
+  const self = await seedSelfTrackingSite(demo.id);
+  if (self.skipped) {
+    console.log(`Self-tracking site skipped: ${self.reason}`);
+  } else {
+    console.log(
+      `Self-tracking site ${self.created ? 'created' : 'already present'}: ${self.domain} (site ${self.siteId}).`
+    );
+  }
 }
 
 seed()

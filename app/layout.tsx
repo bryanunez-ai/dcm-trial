@@ -2,10 +2,11 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Manrope } from 'next/font/google';
 import { getUser } from '@/lib/db/queries';
+import { getBaseUrl } from '@/lib/base-url';
 import { SWRConfig } from 'swr';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.BASE_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(getBaseUrl()),
   title: {
     default: 'Nova Analytics — cookieless web analytics with an AI advisor',
     template: '%s · Nova Analytics'

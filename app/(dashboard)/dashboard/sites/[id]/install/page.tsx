@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { getUser } from '@/lib/db/queries';
 import { getOwnedSite } from '@/lib/sites/queries';
+import { getBaseUrl } from '@/lib/base-url';
 import { CopyableSnippet } from './copyable-snippet';
 import { SharePanel } from './share-panel';
 
@@ -25,7 +26,7 @@ export default async function InstallPage({
   // "forbidden" would confirm the id is real and let anyone enumerate other people's sites.
   if (!site) notFound();
 
-  const baseUrl = process.env.BASE_URL ?? 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
   const snippet = `<script defer src="${baseUrl}/nova.js" data-site="${site.siteKey}"></script>`;
 
   return (

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Plus, Settings2 } from 'lucide-react';
+import { Plus, Settings2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getUser } from '@/lib/db/queries';
 import { getVisibleSites } from '@/lib/sites/queries';
@@ -79,6 +79,12 @@ export default async function DashboardPage({
 
         <div className="flex flex-wrap items-center gap-2">
           <SiteSwitcher sites={sites} selectedId={selected.id} days={days} />
+          <Button asChild variant="outline" size="sm" className="rounded-full">
+            <Link href={`/dashboard/sites/${selected.id}/insights`}>
+              <Sparkles className="size-4" />
+              Insights
+            </Link>
+          </Button>
           {!selected.isSample && (
             <Button asChild variant="outline" size="sm" className="rounded-full">
               <Link href={`/dashboard/sites/${selected.id}/install`}>

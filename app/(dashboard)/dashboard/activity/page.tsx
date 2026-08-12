@@ -7,8 +7,10 @@ import {
   UserCog,
   AlertCircle,
   UserMinus,
-  Mail,
-  CheckCircle,
+  Globe,
+  Trash2,
+  Link2,
+  Link2Off,
   type LucideIcon,
 } from 'lucide-react';
 import { ActivityType } from '@/lib/db/schema';
@@ -21,10 +23,10 @@ const iconMap: Record<ActivityType, LucideIcon> = {
   [ActivityType.UPDATE_PASSWORD]: Lock,
   [ActivityType.DELETE_ACCOUNT]: UserMinus,
   [ActivityType.UPDATE_ACCOUNT]: Settings,
-  [ActivityType.CREATE_TEAM]: UserPlus,
-  [ActivityType.REMOVE_TEAM_MEMBER]: UserMinus,
-  [ActivityType.INVITE_TEAM_MEMBER]: Mail,
-  [ActivityType.ACCEPT_INVITATION]: CheckCircle,
+  [ActivityType.CREATE_SITE]: Globe,
+  [ActivityType.DELETE_SITE]: Trash2,
+  [ActivityType.ENABLE_SHARING]: Link2,
+  [ActivityType.DISABLE_SHARING]: Link2Off,
 };
 
 function getRelativeTime(date: Date) {
@@ -55,14 +57,14 @@ function formatAction(action: ActivityType): string {
       return 'You deleted your account';
     case ActivityType.UPDATE_ACCOUNT:
       return 'You updated your account';
-    case ActivityType.CREATE_TEAM:
-      return 'You created a new team';
-    case ActivityType.REMOVE_TEAM_MEMBER:
-      return 'You removed a team member';
-    case ActivityType.INVITE_TEAM_MEMBER:
-      return 'You invited a team member';
-    case ActivityType.ACCEPT_INVITATION:
-      return 'You accepted an invitation';
+    case ActivityType.CREATE_SITE:
+      return 'You added a site';
+    case ActivityType.DELETE_SITE:
+      return 'You deleted a site';
+    case ActivityType.ENABLE_SHARING:
+      return 'You published a share link';
+    case ActivityType.DISABLE_SHARING:
+      return 'You revoked a share link';
     default:
       return 'Unknown action occurred';
   }

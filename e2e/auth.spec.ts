@@ -38,6 +38,20 @@ test.describe('authentication', () => {
     expect(session!.sameSite).toBe('Lax');
   });
 
+  test('a new account can sign up and lands on the dashboard', async ({ page }) => {
+    // Signing up used to create a team and a membership row alongside the user. Teams are gone,
+    // so this exercises the simplified path end to end.
+    const email = `signup-${Date.now()}@example.test`;
+
+    await page.goto('/sign-up');
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', 'a-long-enough-password');
+    await page.click('button[type="submit"]');
+
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.getByText(email)).toBeVisible();
+  });
+
   test('wrong credentials do not create a session', async ({ page }) => {
     await page.goto('/sign-in');
 

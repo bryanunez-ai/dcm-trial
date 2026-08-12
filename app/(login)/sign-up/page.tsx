@@ -1,10 +1,10 @@
-import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { Login } from '../login';
 
+export const metadata: Metadata = {
+  title: 'Sign up'
+};
+
 export default function SignUpPage() {
-  return (
-    <Suspense>
-      <Login mode="signup" />
-    </Suspense>
-  );
+  return <Login mode="signup" />;
 }

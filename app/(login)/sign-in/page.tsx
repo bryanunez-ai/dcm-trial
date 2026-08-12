@@ -1,10 +1,10 @@
-import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { Login } from '../login';
 
+export const metadata: Metadata = {
+  title: 'Sign in'
+};
+
 export default function SignInPage() {
-  return (
-    <Suspense>
-      <Login mode="signin" />
-    </Suspense>
-  );
+  return <Login mode="signin" />;
 }

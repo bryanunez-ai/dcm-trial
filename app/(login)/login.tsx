@@ -1,48 +1,67 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useActionState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CircleIcon, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { signIn, signUp } from './actions';
 import { ActionState } from '@/lib/auth/middleware';
+import { NovaMark } from '@/components/nova-logo';
+import { DEMO_EMAIL, DEMO_PASSWORD } from '@/lib/demo';
 
+/**
+ * This component reads no search params, deliberately.
+ *
+ * It used to carry three hidden inputs — redirect, priceId and inviteId — read from the query
+ * string with useSearchParams. All three are dead now: priceId fed Stripe checkout, inviteId fed
+ * team invitations, and redirect was only ever set by the checkout handoff. A field that posts a
+ * value nothing reads is decorative, so they are gone rather than preserved.
+ *
+ * That also removes the PPR hazard the spec warns about: useSearchParams in a client component
+ * that renders a form opts the subtree out of the prerendered shell, and the form ships as an
+ * empty shell that only appears after hydration. There is nothing to lift into the server page
+ * because there is nothing left to read.
+ */
 export function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect');
-  const priceId = searchParams.get('priceId');
-  const inviteId = searchParams.get('inviteId');
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     mode === 'signin' ? signIn : signUp,
     { error: '' }
   );
 
+  function fillDemoCredentials() {
+    const form = formRef.current;
+    if (!form) return;
+
+    const email = form.elements.namedItem('email') as HTMLInputElement | null;
+    const password = form.elements.namedItem(
+      'password'
+    ) as HTMLInputElement | null;
+
+    if (email) email.value = DEMO_EMAIL;
+    if (password) password.value = DEMO_PASSWORD;
+    password?.focus();
+  }
+
   return (
-    <div className="min-h-[100dvh] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <div className="min-h-[100dvh] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 bg-muted/40">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <CircleIcon className="h-12 w-12 text-orange-500" />
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <Link href="/" className="flex justify-center">
+          <NovaMark className="size-12 text-brand" />
+        </Link>
+        <h2 className="mt-6 text-center text-3xl font-extrabold tracking-tight">
           {mode === 'signin'
-            ? 'Sign in to your account'
-            : 'Create your account'}
+            ? 'Sign in to Nova Analytics'
+            : 'Create your Nova account'}
         </h2>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <form className="space-y-6" action={formAction}>
-          <input type="hidden" name="redirect" value={redirect || ''} />
-          <input type="hidden" name="priceId" value={priceId || ''} />
-          <input type="hidden" name="inviteId" value={inviteId || ''} />
+        <form ref={formRef} className="space-y-6" action={formAction}>
           <div>
-            <Label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <Label htmlFor="email" className="block text-sm font-medium">
               Email
             </Label>
             <div className="mt-1">
@@ -53,18 +72,15 @@ export function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
                 autoComplete="email"
                 defaultValue={state.email}
                 required
-                maxLength={50}
-                className="appearance-none rounded-full relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your email"
+                maxLength={255}
+                className="rounded-full"
+                placeholder="you@example.com"
               />
             </div>
           </div>
 
           <div>
-            <Label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <Label htmlFor="password" className="block text-sm font-medium">
               Password
             </Label>
             <div className="mt-1">
@@ -79,20 +95,20 @@ export function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
                 required
                 minLength={8}
                 maxLength={100}
-                className="appearance-none rounded-full relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your password"
+                className="rounded-full"
+                placeholder="At least 8 characters"
               />
             </div>
           </div>
 
           {state?.error && (
-            <div className="text-red-500 text-sm">{state.error}</div>
+            <div className="text-destructive text-sm">{state.error}</div>
           )}
 
           <div>
             <Button
               type="submit"
-              className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+              className="w-full rounded-full"
               disabled={pending}
             >
               {pending ? (
@@ -109,31 +125,58 @@ export function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
           </div>
         </form>
 
+        {mode === 'signin' && (
+          <div className="mt-6 rounded-xl border border-border bg-card p-4">
+            <p className="text-sm font-medium">Reviewing this project?</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Sign in with the shared demo account. It is read-mostly on
+              purpose: it cannot change its own credentials, be deleted, or
+              spend money on AI analyses.
+            </p>
+            <dl className="mt-3 space-y-1 text-sm">
+              <div className="flex gap-2">
+                <dt className="text-muted-foreground w-20">Email</dt>
+                <dd className="font-mono">{DEMO_EMAIL}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="text-muted-foreground w-20">Password</dt>
+                <dd className="font-mono">{DEMO_PASSWORD}</dd>
+              </div>
+            </dl>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3 rounded-full"
+              onClick={fillDemoCredentials}
+            >
+              Fill in demo credentials
+            </Button>
+          </div>
+        )}
+
         <div className="mt-6">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 text-gray-500">
+              <span className="px-2 bg-muted/40 text-muted-foreground">
                 {mode === 'signin'
-                  ? 'New to our platform?'
+                  ? 'New to Nova Analytics?'
                   : 'Already have an account?'}
               </span>
             </div>
           </div>
 
           <div className="mt-6">
-            <Link
-              href={`${mode === 'signin' ? '/sign-up' : '/sign-in'}${
-                redirect ? `?redirect=${redirect}` : ''
-              }${priceId ? `&priceId=${priceId}` : ''}`}
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-full shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-            >
-              {mode === 'signin'
-                ? 'Create an account'
-                : 'Sign in to existing account'}
-            </Link>
+            <Button asChild variant="outline" className="w-full rounded-full">
+              <Link href={mode === 'signin' ? '/sign-up' : '/sign-in'}>
+                {mode === 'signin'
+                  ? 'Create an account'
+                  : 'Sign in to existing account'}
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

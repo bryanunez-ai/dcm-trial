@@ -5,8 +5,13 @@ import { getUser } from '@/lib/db/queries';
 import { SWRConfig } from 'swr';
 
 export const metadata: Metadata = {
-  title: 'Next.js SaaS Starter',
-  description: 'Get started quickly with Next.js, Postgres, and Stripe.'
+  metadataBase: new URL(process.env.BASE_URL ?? 'http://localhost:3000'),
+  title: {
+    default: 'Nova Analytics — cookieless web analytics with an AI advisor',
+    template: '%s · Nova Analytics'
+  },
+  description:
+    'Privacy-first web analytics you install with one line. No cookies, no consent banner, and an AI advisor that reads your traffic and your pages to tell you what to change.'
 };
 
 export const viewport: Viewport = {
@@ -21,11 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`bg-white dark:bg-gray-950 text-black dark:text-white ${manrope.className}`}
-    >
-      <body className="min-h-[100dvh] bg-gray-50">
+    <html lang="en" className={manrope.className} suppressHydrationWarning>
+      <body className="min-h-[100dvh] bg-background text-foreground">
         <SWRConfig
           value={{
             fallback: {

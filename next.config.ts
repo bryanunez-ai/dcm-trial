@@ -10,7 +10,12 @@ const nextConfig: NextConfig = {
     root: dirname(fileURLToPath(import.meta.url))
   },
   experimental: {
-    ppr: true,
+    // Incremental, not global. With blanket PPR every route emits a static shell — and a 200 —
+    // before its dynamic part runs, so a later notFound() cannot change the status code. That
+    // makes a revoked /share/[token] answer 200 with the not-found page in the body, which is the
+    // opposite of the guarantee that disabling a share link kills it. Routes opt in individually
+    // with `export const experimental_ppr = true`.
+    ppr: 'incremental',
     clientSegmentCache: true
   }
 };

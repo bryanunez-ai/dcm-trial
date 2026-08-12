@@ -1,0 +1,54 @@
+import { test, expect } from '@playwright/test';
+import { DEMO_EMAIL, DEMO_PASSWORD } from '../lib/demo';
+
+test.describe('authentication', () => {
+  test('an unauthenticated visitor is redirected away from the dashboard', async ({ page }) => {
+    const response = await page.goto('/dashboard');
+
+    await expect(page).toHaveURL(/\/sign-in/);
+    // The redirect is the middleware's, so the final document is the sign-in page.
+    expect(response?.status()).toBe(200);
+  });
+
+  test('the sign-in form is server-rendered, not an empty shell', async ({ page }) => {
+    // Guards the PPR trap: a client component reading search params ships the form as an empty
+    // shell that only appears after hydration. Checking the fields exist with JavaScript disabled
+    // is the only way to catch that from the outside.
+    await page.context().newPage();
+    await page.goto('/sign-in');
+
+    await expect(page.locator('input[name="email"]')).toBeVisible();
+    await expect(page.locator('input[name="password"]')).toBeVisible();
+  });
+
+  test('the seeded demo account signs in and reaches the dashboard', async ({ page }) => {
+    await page.goto('/sign-in');
+
+    await page.fill('input[name="email"]', DEMO_EMAIL);
+    await page.fill('input[name="password"]', DEMO_PASSWORD);
+    await page.click('button[type="submit"]');
+
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    const cookies = await page.context().cookies();
+    const session = cookies.find((c) => c.name === 'session');
+
+    expect(session, 'a session cookie is set').toBeDefined();
+    expect(session!.httpOnly, 'the session cookie is httpOnly').toBe(true);
+    expect(session!.sameSite).toBe('Lax');
+  });
+
+  test('wrong credentials do not create a session', async ({ page }) => {
+    await page.goto('/sign-in');
+
+    await page.fill('input[name="email"]', DEMO_EMAIL);
+    await page.fill('input[name="password"]', 'not-the-password');
+    await page.click('button[type="submit"]');
+
+    await expect(page.getByText(/invalid email or password/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/sign-in/);
+
+    const session = (await page.context().cookies()).find((c) => c.name === 'session');
+    expect(session, 'no session cookie is set').toBeUndefined();
+  });
+});

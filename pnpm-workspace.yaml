@@ -1,0 +1,25 @@
+# Build-scripts allowlist.
+#
+# These packages have postinstall scripts we need to run. @tailwindcss/oxide is the one that
+# matters most: it ships a native binding, and without it Tailwind v4 cannot compile any CSS.
+#
+# The two keys are NOT the same shape, which is easy to get wrong:
+#   pnpm 11 reads `allowBuilds`            — a MAP of package -> boolean
+#   pnpm 10 read  `onlyBuiltDependencies`  — a LIST of package names
+# Writing `allowBuilds` as a list does not work; pnpm 11 rewrites it into a map and asks you to
+# set each entry to true or false. Both keys are declared so an install on either major approves
+# the same set, and the version is pinned in package.json (`packageManager`) so local and CI
+# cannot silently run different majors in the first place.
+#
+# On pnpm 11 an ignored build script is a hard install failure (ERR_PNPM_IGNORED_BUILDS, exit 1),
+# not the warning pnpm 10 printed.
+
+allowBuilds:
+  '@tailwindcss/oxide': true
+  esbuild: true
+  sharp: true
+
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - esbuild
+  - sharp

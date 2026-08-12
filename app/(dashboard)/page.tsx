@@ -31,7 +31,7 @@ const FEATURES = [
   {
     icon: Code2,
     title: 'One line to install',
-    body: 'A single script tag, about 1.5 KB. It handles single-page apps, skips localhost, honours Do Not Track, and never throws an error into your page.'
+    body: 'A single script tag, about 2 KB over the wire. It handles single-page apps, skips localhost, honours Do Not Track, and never throws an error into your page.'
   },
   {
     icon: BarChart3,

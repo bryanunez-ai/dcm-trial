@@ -143,4 +143,35 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* The built-in CSS easings are too weak to read as intentional. */
+  :root {
+    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+}
+
+@layer utilities {
+  /*
+    There is deliberately no scroll-triggered entrance animation here.
+
+    The first attempt used `animation-timeline: view()` with an opacity:0 start, and it left whole
+    sections — the feature grid, the install snippet, the steps — rendered as blank space. A
+    decorative effect had become the thing deciding whether content was visible at all, which is
+    a far worse failure than having no animation. Entrance animation is not worth that risk on a
+    page whose job is to be read; what remains is tied to interaction instead.
+  */
+
+  /* Touch devices fire hover on tap, so lift effects are gated to real pointers. */
+  @media (hover: hover) and (pointer: fine) {
+    .hover-lift {
+      transition:
+        transform 200ms var(--ease-out-strong),
+        border-color 200ms ease,
+        box-shadow 200ms ease;
+    }
+
+    .hover-lift:hover {
+      transform: translateY(-2px);
+    }
+  }
 }

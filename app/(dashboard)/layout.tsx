@@ -97,10 +97,14 @@ function Header() {
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  // A div, not a section. <section> is sectioning content, and a <footer> nested inside it does
+  // not expose the contentinfo landmark to assistive technology — the page footer stops being
+  // announced as the page footer. This wrapper is a layout shell and carries no heading, so it
+  // should not have been sectioning content in the first place.
   return (
-    <section className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen">
       <Header />
       {children}
-    </section>
+    </div>
   );
 }

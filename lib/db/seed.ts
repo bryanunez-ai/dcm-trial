@@ -1,76 +1,76 @@
-import { stripe } from '../payments/stripe';
+import { eq } from 'drizzle-orm';
 import { db } from './drizzle';
 import { users, teams, teamMembers } from './schema';
 import { hashPassword } from '@/lib/auth/session';
+import { DEMO_EMAIL, DEMO_NAME, DEMO_PASSWORD } from '@/lib/demo';
 
-async function createStripeProducts() {
-  console.log('Creating Stripe products and prices...');
-
-  const baseProduct = await stripe.products.create({
-    name: 'Base',
-    description: 'Base subscription plan',
-  });
-
-  await stripe.prices.create({
-    product: baseProduct.id,
-    unit_amount: 800, // $8 in cents
-    currency: 'usd',
-    recurring: {
-      interval: 'month',
-      trial_period_days: 7,
-    },
-  });
-
-  const plusProduct = await stripe.products.create({
-    name: 'Plus',
-    description: 'Plus subscription plan',
-  });
-
-  await stripe.prices.create({
-    product: plusProduct.id,
-    unit_amount: 1200, // $12 in cents
-    currency: 'usd',
-    recurring: {
-      interval: 'month',
-      trial_period_days: 7,
-    },
-  });
-
-  console.log('Stripe products and prices created successfully.');
-}
-
+/**
+ * Seeds the demo account whose credentials are published on the sign-in page.
+ *
+ * Idempotent: re-running resets the demo account's password rather than failing on the unique
+ * email constraint. That matters because the account is publicly usable — if a visitor manages
+ * to change something, re-running the seed is the recovery path.
+ *
+ * The starter's version of this file imported `../payments/stripe` and created Stripe products.
+ * That import alone made the seed unrunnable: lib/payments/stripe.ts constructs the Stripe client
+ * at module scope from STRIPE_SECRET_KEY, which throws on an undefined key before a single row is
+ * written. Stripe is being removed entirely (SPEC §2.1), so it goes now rather than later.
+ *
+ * The sample site and the self-tracking site are not seeded here yet — `sites` does not exist
+ * until the ingestion milestone. They arrive with it.
+ */
 async function seed() {
-  const email = 'test@test.com';
-  const password = 'admin123';
-  const passwordHash = await hashPassword(password);
+  const passwordHash = await hashPassword(DEMO_PASSWORD);
 
-  const [user] = await db
-    .insert(users)
-    .values([
-      {
-        email: email,
-        passwordHash: passwordHash,
-        role: "owner",
-      },
-    ])
-    .returning();
+  const [existing] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, DEMO_EMAIL))
+    .limit(1);
 
-  console.log('Initial user created.');
+  let user = existing;
 
-  const [team] = await db
-    .insert(teams)
-    .values({
-      name: 'Test Team',
-    })
-    .returning();
+  if (user) {
+    [user] = await db
+      .update(users)
+      .set({ passwordHash, name: DEMO_NAME, deletedAt: null, updatedAt: new Date() })
+      .where(eq(users.id, user.id))
+      .returning();
+    console.log(`Demo account reset: ${DEMO_EMAIL}`);
+  } else {
+    [user] = await db
+      .insert(users)
+      .values({
+        email: DEMO_EMAIL,
+        name: DEMO_NAME,
+        passwordHash,
+        role: 'owner',
+      })
+      .returning();
+    console.log(`Demo account created: ${DEMO_EMAIL}`);
+  }
 
-  await db.insert(teamMembers).values({
-    teamId: team.id,
-    userId: user.id,
-    role: 'owner',
-  });
+  // The starter scopes everything through a team, so the demo account needs one to look like any
+  // other account until teams are removed in the whitelabel milestone (SPEC §2.2).
+  const [membership] = await db
+    .select()
+    .from(teamMembers)
+    .where(eq(teamMembers.userId, user.id))
+    .limit(1);
 
-  await createStripeProducts();
+  if (!membership) {
+    const [team] = await db
+      .insert(teams)
+      .values({ name: 'Nova Analytics' })
+      .returning();
+
+    await db.insert(teamMembers).values({
+      teamId: team.id,
+      userId: user.id,
+      role: 'owner',
+    });
+    console.log('Team created for the demo account.');
+  }
 }
 
 seed()

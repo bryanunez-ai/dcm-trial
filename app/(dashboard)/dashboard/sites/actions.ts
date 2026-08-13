@@ -120,22 +120,22 @@ const deleteSiteSchema = z.object({
 export const deleteSite = validatedActionWithUser(
   deleteSiteSchema,
   async (data, _formData, user) => {
-    // getOwnedSite can never match the sample site — its user_id is null and null equals nothing
-    // — so the unowned demo data is safe from every account without a special case here.
+    // This is the entire guard, and it is structural rather than conditional.
+    //
+    // getOwnedSite matches on user_id, and both permanent sites — the sample site and the
+    // self-tracking site — have user_id null. Null equals nothing in SQL, so neither can ever be
+    // matched here, by any account, including the demo one. There is no rule to forget to write
+    // and no special case to get wrong.
+    //
+    // An earlier version instead refused all deletions from the demo account, to protect those
+    // two sites. That was too broad: it also blocked deleting sites a visitor had added
+    // themselves, leaving them stuck in the dashboard behind a button that always refused.
     const site = await getOwnedSite(data.siteId, user.id);
 
     if (!site) {
-      // Deliberately the same answer whether the site does not exist or belongs to someone else.
+      // Deliberately the same answer whether the site does not exist, belongs to someone else, or
+      // is one of the permanent ones.
       return { error: 'Site not found.' };
-    }
-
-    // The self-tracking site is what makes the deployed demo show real traffic. The demo
-    // credentials are published, so without this any visitor could delete it for everyone.
-    if (isDemoAccount(user.email)) {
-      return {
-        error:
-          'The demo account cannot delete sites. Create your own account to manage sites.'
-      };
     }
 
     // Events cascade from the foreign key.

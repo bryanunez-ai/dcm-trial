@@ -43,18 +43,12 @@ async function seed() {
     console.log(`Demo account created: ${DEMO_EMAIL}`);
   }
 
-  const [demo] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, DEMO_EMAIL))
-    .limit(1);
-
   const sample = await seedSampleSite();
   console.log(
     `Sample site seeded: ${sample.events} events across 90 days (site ${sample.siteId}).`
   );
 
-  const self = await seedSelfTrackingSite(demo.id);
+  const self = await seedSelfTrackingSite();
   if (self.skipped) {
     console.log(`Self-tracking site skipped: ${self.reason}`);
   } else {

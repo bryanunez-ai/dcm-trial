@@ -85,7 +85,9 @@ export default async function DashboardPage({
               Insights
             </Link>
           </Button>
-          {!selected.isSample && (
+          {/* Only for sites this account owns. The install screen requires ownership, so offering
+              it for the shared sample and self-tracking sites would be a button that 404s. */}
+          {selected.userId === user.id && (
             <Button asChild variant="outline" size="sm" className="rounded-full">
               <Link href={`/dashboard/sites/${selected.id}/install`}>
                 <Settings2 className="size-4" />
@@ -101,6 +103,17 @@ export default async function DashboardPage({
           <strong className="font-medium text-foreground">Sample data.</strong>{' '}
           This site is generated from a fixed seed so every demo shows the same
           numbers. It accepts no real traffic and cannot be edited or deleted.
+        </p>
+      )}
+
+      {!selected.isSample && selected.userId === null && (
+        <p className="rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+          <strong className="font-medium text-foreground">
+            Nova measuring itself.
+          </strong>{' '}
+          Real traffic on this deployment, including your visit. It is shared
+          with every account and belongs to none, so nobody can edit or delete
+          it.
         </p>
       )}
 

@@ -461,8 +461,16 @@ nothing displays.
    produced 5,097 events locally and 5,001 in production forty minutes later, because the UTC date
    rolled over in between. Nothing is wrong when that happens. If a demo and a screenshot must match
    exactly, take them on the same UTC day, or pin the window's end date instead of using "today".
-3. The **self-tracking site**, registered against the deployed domain and owned by the demo account, so the
-   live dashboard shows real traffic including the reviewer's own visit.
+3. The **self-tracking site**, registered against the deployed domain, so the live dashboard shows real
+   traffic including the reviewer's own visit.
+
+   **Unowned, exactly like the sample site** — `user_id` null. It was originally owned by the demo
+   account and protected by a rule saying "the demo account cannot delete sites", and that rule turned
+   out to be too broad in practice: it also blocked a visitor deleting a site *they* had added, leaving
+   it stuck in the dashboard behind a button that always refused. Making the site unowned protects it
+   structurally instead — every account can read it, no ownership check can ever match it — and removes
+   the special case entirely. Prefer structure over a condition wherever a permission can be expressed
+   as one.
 
 `pnpm db:seed-analysis` is **deliberately separate** — see §8.9.
 
@@ -791,7 +799,9 @@ That makes the account publicly usable — treat it as hostile input. It needs s
 
 - Cannot change its password, email or name; cannot be deleted.
 - Cannot generate AI analyses.
-- The self-tracking site cannot be deleted by anyone.
+- The self-tracking site cannot be deleted by anyone — enforced by giving it no owner rather than by a
+  rule about who may delete. **It may still add and delete its own sites**, and must be able to: a
+  visitor who registers a site needs to be able to remove it again.
 
 Without these, one visitor can lock out every later one — and there is no password reset.
 

@@ -1,6 +1,14 @@
 import { test, expect, type Page } from '@playwright/test';
+import { isNull } from 'drizzle-orm';
 import { startHostPage } from './helpers/host-page';
 import { DEMO_EMAIL, DEMO_PASSWORD } from '../lib/demo';
+import { db } from '../lib/db/drizzle';
+import { sites } from '../lib/db/schema';
+
+/** Sites owned by nobody: the sample site and the self-tracking site. */
+async function sharedSites() {
+  return db.select().from(sites).where(isNull(sites.userId));
+}
 
 const TRACKER_DOMAIN = 'nova-e2e.test';
 const BROWSER_UA =
@@ -95,23 +103,59 @@ test.describe('sites', () => {
     await contextB.close();
   });
 
-  test('the demo account cannot delete sites', async ({ page }) => {
-    // The credentials are published, so without a server-side guard any visitor could delete the
-    // site that makes the deployed demo show real traffic.
+  test('the shared sites are readable by everyone and deletable by nobody', async ({
+    page
+  }) => {
+    // The sample site and the self-tracking site both have user_id null. That single nullable
+    // column is the whole permission model: readable by every account, matched by no ownership
+    // check. An earlier version instead forbade the demo account from deleting anything, which
+    // also blocked visitors deleting sites they had added themselves.
+    await signUpFreshAccount(page);
+
+    const shared = await sharedSites();
+    expect(shared.length, 'there should be shared sites to check').toBeGreaterThan(0);
+
+    for (const site of shared) {
+      // Readable: it appears in the switcher and its dashboard renders.
+      const response = await page.goto(`/dashboard?site=${site.id}`);
+      expect(response?.status()).toBe(200);
+      await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
+
+      // Not manageable: the install screen requires ownership.
+      const install = await page.goto(`/dashboard/sites/${site.id}/install`);
+      expect(install?.status(), `${site.domain} must not be manageable`).toBe(404);
+    }
+
+    // And they are not listed on the sites screen, so no delete button is offered for them.
+    await page.goto('/dashboard/sites');
+    for (const site of shared) {
+      await expect(page.getByText(site.domain)).toHaveCount(0);
+    }
+  });
+
+  test('the demo account can delete a site it added itself', async ({ page }) => {
+    // The demo account is shared and its credentials are published, but a visitor who adds a site
+    // must be able to remove it again. The permanent sites are protected structurally, so this
+    // needs no special case.
     await page.goto('/sign-in');
     await page.fill('input[name="email"]', DEMO_EMAIL);
     await page.fill('input[name="password"]', DEMO_PASSWORD);
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/dashboard/);
 
-    await page.goto('/dashboard/sites');
-    const deleteButton = page.getByRole('button', { name: /delete/i }).first();
+    const domain = `demo-added-${Date.now()}.example`;
+    await createSite(page, 'Added by a visitor', domain);
 
-    if (await deleteButton.count()) {
-      page.on('dialog', (d) => d.accept());
-      await deleteButton.click();
-      await expect(page.getByText(/demo account cannot delete sites/i)).toBeVisible();
-    }
+    await page.goto('/dashboard/sites');
+    await expect(page.getByText(domain)).toBeVisible();
+
+    page.on('dialog', (d) => d.accept());
+    await page
+      .locator('li', { hasText: domain })
+      .getByRole('button', { name: /delete/i })
+      .click();
+
+    await expect(page.getByText(domain)).toHaveCount(0);
   });
 
   test('a site can be deleted, and its history goes with it', async ({ page }) => {

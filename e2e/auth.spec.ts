@@ -10,15 +10,22 @@ test.describe('authentication', () => {
     expect(response?.status()).toBe(200);
   });
 
-  test('the sign-in form is server-rendered, not an empty shell', async ({ page }) => {
+  test('the sign-in form is server-rendered, not an empty shell', async ({ request }) => {
     // Guards the PPR trap: a client component reading search params ships the form as an empty
-    // shell that only appears after hydration. Checking the fields exist with JavaScript disabled
-    // is the only way to catch that from the outside.
-    await page.context().newPage();
-    await page.goto('/sign-in');
+    // shell that only appears after hydration. Asserting on the raw HTML — no browser, no
+    // JavaScript, nothing hydrated — is the only way to tell the difference from the outside. A
+    // rendered page would pass either way.
+    const response = await request.get('/sign-in');
+    expect(response.status()).toBe(200);
 
-    await expect(page.locator('input[name="email"]')).toBeVisible();
-    await expect(page.locator('input[name="password"]')).toBeVisible();
+    const html = await response.text();
+    expect(html, 'the email field must be in the server response').toMatch(
+      /<input[^>]*name="email"/
+    );
+    expect(html, 'the password field must be in the server response').toMatch(
+      /<input[^>]*name="password"/
+    );
+    expect(html).toContain('Sign in to Nova Analytics');
   });
 
   test('the seeded demo account signs in and reaches the dashboard', async ({ page }) => {

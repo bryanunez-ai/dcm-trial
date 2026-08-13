@@ -398,8 +398,17 @@ export default function ProcessPage() {
             <Doc name="docs/PROMPT.md — the bootstrap prompt" body={PROMPT} />
           </div>
           <p className="!mt-6">
-            The full history, including every commit message explaining why a
-            change was made and what was verified, is on{' '}
+            There is also a{' '}
+            <a
+              href="https://drive.google.com/file/d/1jGXqnu45-D3zWDAjfW7_EMoTy-FG4EI0/view?usp=sharing"
+              className="text-brand underline underline-offset-4"
+              target="_blank"
+              rel="noreferrer"
+            >
+              video walkthrough
+            </a>
+            , and the full history — including every commit message explaining
+            why a change was made and what was verified — is on{' '}
             <a
               href="https://github.com/bryanunez-ai/dcm-trial"
               className="text-brand underline underline-offset-4"

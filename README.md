@@ -15,7 +15,7 @@ and rebuilt into a different product.
 | **Repository** | <https://github.com/bryanunez-ai/dcm-trial> |
 | **Test credentials** | `admin@novaanalytics.io` / `NovaDemo2026!` |
 | **How it was built** | <https://dcm-trial.vercel.app/process> — the process, the spec, and where the spec was wrong |
-| **Video walkthrough** | _to be added_ |
+| **Video walkthrough** | [Watch on Google Drive](https://drive.google.com/file/d/1jGXqnu45-D3zWDAjfW7_EMoTy-FG4EI0/view?usp=sharing) |
 
 The credentials are also printed on the sign-in page with a button that fills the form, so there is
 no need to come back here for them.

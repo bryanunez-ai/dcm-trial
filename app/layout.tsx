@@ -26,8 +26,24 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const siteKey = process.env.NOVA_SITE_KEY?.trim();
+
   return (
     <html lang="en" className={manrope.className} suppressHydrationWarning>
+      <head>
+        {/*
+          Nova measuring itself, using its own public snippet — the same tag a customer pastes,
+          not a privileged internal path. Dogfooding is the point: the deployed dashboard shows
+          real traffic, including a reviewer's own visit arriving while they watch.
+
+          Rendered only when NOVA_SITE_KEY is set, so local development and anyone else's fork
+          never report into this deployment's numbers. The key is public by design — it ships in
+          the HTML of every tracked page — so there is nothing here that needs protecting.
+        */}
+        {siteKey && (
+          <script defer src="/nova.js" data-site={siteKey} />
+        )}
+      </head>
       <body className="min-h-[100dvh] bg-background text-foreground">
         <SWRConfig
           value={{

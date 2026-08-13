@@ -454,6 +454,13 @@ nothing displays.
 2. The **sample site** — `user_id` null, `is_sample` true — with ~90 days of generated events from a
    **fixed-seed PRNG**, so local, production, screenshots and the walkthrough video all show identical
    numbers. Regenerate on each run so the window always ends today.
+
+   **Identical within a UTC day, not across one.** These two requirements are in tension: a window that
+   always ends *today* cannot also produce the same totals *every* day, because a different set of days
+   falls on a weekend and the generator makes weekends quieter. Observed for real — the same seed
+   produced 5,097 events locally and 5,001 in production forty minutes later, because the UTC date
+   rolled over in between. Nothing is wrong when that happens. If a demo and a screenshot must match
+   exactly, take them on the same UTC day, or pin the window's end date instead of using "today".
 3. The **self-tracking site**, registered against the deployed domain and owned by the demo account, so the
    live dashboard shows real traffic including the reviewer's own visit.
 

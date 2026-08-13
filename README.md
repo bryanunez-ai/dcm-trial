@@ -101,6 +101,16 @@ that is enforced by tests, after a deploy failed with `TypeError: Invalid URL â€
 **Use two Neon branches** â€” `dev` locally, `main` for production. Sharing one means a migration
 applied locally instantly breaks the deployed app, which is still running the old code.
 
+Keep the production string in `.env` under `PROD_POSTGRES_URL`, which nothing reads automatically,
+so touching production is always deliberate:
+
+```powershell
+$env:POSTGRES_URL=$env:PROD_POSTGRES_URL; pnpm db:migrate; Remove-Item Env:\POSTGRES_URL
+```
+
+`pnpm db:seed` regenerates the sample site's ~5,000 events on every run, so pointing it at the
+wrong branch is not harmless.
+
 ### Commands
 
 ```bash

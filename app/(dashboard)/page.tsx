@@ -79,9 +79,22 @@ export default function HomePage() {
       <main className="flex-1">
         {/* Hero */}
       <section className="relative overflow-hidden">
+        {/*
+          A soft glow, not a tinted band.
+
+          The previous version put a radial gradient inside a fixed-height box whose colour was
+          strongest exactly at the box's bottom edge, so the tint stopped dead in a hard
+          horizontal line across the page. The fix is a blob whose gradient reaches full
+          transparency at its OWN bounds — closest-side does that — so wherever the section clips
+          it, there is nothing left to clip. The blur softens what remains.
+        */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 -top-40 h-80 bg-[radial-gradient(60%_100%_at_50%_100%,color-mix(in_oklab,var(--brand)_18%,transparent),transparent)]"
+          className="pointer-events-none absolute left-1/2 top-[-8rem] h-[42rem] w-[80rem] max-w-[140%] -translate-x-1/2 rounded-full blur-3xl"
+          style={{
+            background:
+              'radial-gradient(closest-side, color-mix(in oklab, var(--brand) 24%, transparent), transparent)'
+          }}
         />
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
           <div className="mx-auto max-w-3xl text-center">
@@ -323,6 +336,12 @@ export default function HomePage() {
           </div>
 
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <Link
+              href="/process"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              How this was built
+            </Link>
             <Link
               href="/sign-in"
               className="text-muted-foreground transition-colors hover:text-foreground"

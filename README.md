@@ -7,12 +7,33 @@ quotes the figure it rests on.
 Built from [Vercel's Next.js SaaS Starter](https://github.com/nextjs/saas-starter), whitelabelled
 and rebuilt into a different product.
 
-- **Live:** <https://dcm-trial.vercel.app>
-- **Demo credentials:** `admin@novaanalytics.io` / `NovaDemo2026!` (also shown on the sign-in page,
-  with a button that fills the form)
+## Submission
 
-The deployed app tracks itself, so the dashboard shows real traffic — including your own visit,
-arriving within a second or two of loading a page.
+| | |
+|---|---|
+| **Live URL** | <https://dcm-trial.vercel.app> |
+| **Repository** | <https://github.com/bryanunez-ai/dcm-trial> |
+| **Test credentials** | `admin@novaanalytics.io` / `NovaDemo2026!` |
+| **How it was built** | <https://dcm-trial.vercel.app/process> — the process, the spec, and where the spec was wrong |
+| **Video walkthrough** | _to be added_ |
+
+The credentials are also printed on the sign-in page with a button that fills the form, so there is
+no need to come back here for them.
+
+The deployed app **tracks itself**, so the dashboard shows real traffic — including your own visit,
+arriving within a second or two of loading a page. Sign in and watch the live counter.
+
+### Five minutes as a reviewer
+
+1. Open the [landing page](https://dcm-trial.vercel.app) and sign in with the demo account.
+2. The **Overview** starts on the sample site — 90 days of clearly-labelled generated data. Switch
+   the site picker to **Nova Analytics (this site)** to see real traffic instead, including your own
+   visit.
+3. **Insights** shows a genuine AI report generated against this deployment. Every recommendation
+   quotes the figure it rests on. The demo account cannot generate new ones — that guard is
+   server-side, and the page explains why rather than showing a button that fails.
+4. Create your own account, add a site, and the install screen gives you a snippet and a share link.
+5. Publish a share link and open it in a private window; revoke it and the same URL 404s.
 
 ---
 
@@ -196,6 +217,59 @@ than by hiding controls — hiding a button does not stop a Server Action being 
 change its password, email or name; cannot be deleted; cannot delete sites; and cannot generate AI
 analyses. Without those, one visitor could lock out every later one, and there is no password reset.
 
+## How it was built
+
+The whole project was built with **Claude Code**, driven from three documents written before any
+code existed: a specification (`docs/SPEC.md`), a bootstrap prompt with nine milestones and a gate
+each had to pass (`docs/PROMPT.md`), and a working agreement loaded into every session
+(`CLAUDE.md`).
+
+[**The process page**](https://dcm-trial.vercel.app/process) tells that story properly — including
+the six places the specification turned out to be wrong, and the moment the AI advisor found a real
+bug in this app's own landing page.
+
+The repository's commit history is part of the record: each message says why a change was made and
+what was verified, not just what changed.
+
+## What was cut, and why
+
+The starter shipped two large features this product does not use. Both were removed **before**
+anything was built, because both touch the schema, and unpicking them after events exist means
+migrating data already collected.
+
+- **Stripe.** Nova is not a subscription product, and `/pricing` called the Stripe API at build
+  time, so any deploy without a live key failed outright. It also broke sign-in and the seed on a
+  fresh checkout — the client is constructed at module scope, so importing it with no key threw
+  before any surrounding code ran.
+- **Teams, invitations and memberships.** Sites belong directly to a user. The invitation flow
+  decided it: it wrote a database row and left a `TODO` where the email would go, so the form looked
+  functional and did nothing.
+
+Removing teams also exposed a real bug worth naming: the starter's `deleteAccount` soft-deleted the
+user and left everything else standing. Once ownership is by user, that would leave sites invisible
+to every dashboard, unreachable by any ownership check, and **still accepting pageviews** from a
+snippet presumably still installed. It now deletes the user's sites first, which cascades to their
+events.
+
+## Verification
+
+Nothing here is reported as working because it compiled. Every milestone ended with a gate phrased
+as an observation:
+
+| Gate | How it was checked |
+|---|---|
+| Whitelabelled | Rendered HTML of every public and authenticated route contains no trace of the starter |
+| Ingestion | Valid and invalid events sent by hand; **11 rejection cases** write nothing and are byte-identical to a success |
+| Privacy | `information_schema` confirms `events` has no column that could hold an IP address or user agent |
+| Salt rotation | The same visitor hashes differently across days, identically within one, differently across two sites |
+| Dashboard | Snippet installed on a real page; the pageview appears |
+| Sharing | A revoked link 404s **with a 404 status**, verified against a production build |
+| SSRF | Loopback, private, link-local, `169.254.169.254`, CGNAT, multicast, IPv4-mapped IPv6, `http://` and foreign domains all refused |
+| Cost controls | Demo account, sample site, empty site, daily cap and reuse window all refuse **before** spending |
+| AI honesty | Every `evidence` string traced by hand back to the supplied figures |
+
+All 69 specs pass against a local dev server **and** against the deployed HTTPS URL.
+
 ## Project layout
 
 ```
@@ -206,7 +280,28 @@ app/share/[token]/        public read-only dashboards
 lib/analytics/            hashing, normalisation, metrics, bot filtering
 lib/ai/                   page fetching, schema, prompt, cost guards
 lib/db/                   schema, migrations, seeds
+app/(dashboard)/process/  how this was built, with the spec inlined from the repo
 public/nova.js            the tracker, ~2 KB gzipped
 e2e/                      the milestone gates
+.github/workflows/ci.yml  typecheck, build, and two invariants, on push and PR
 docs/SPEC.md              the specification this was built against
+docs/PROMPT.md            the bootstrap prompt and why it is shaped that way
 ```
+
+## Shortcuts taken
+
+Worth stating alongside the limitations above, since the brief asks.
+
+- **The AI advisor's demo report is seeded, not generated on demand by reviewers.** That is
+  deliberate — the demo credentials are published, so letting anyone press a button that spends
+  money would be an open invoice. `pnpm db:seed-analysis` produced one real report against this
+  deployment, and the guards explain themselves in the UI.
+- **Bot filtering is a user-agent list.** It removes the bulk of crawler traffic and none of the
+  traffic actively pretending not to be a crawler.
+- **No rate limiting on the collector.** Fine at demo volume; a real deployment needs it, since site
+  keys are public.
+- **The e2e suite writes to whichever database it points at.** Running it against production creates
+  throwaway accounts, so they have to be cleaned up afterwards. A dedicated test database would be
+  better.
+- **`middleware.ts` is deprecated** in this Next.js canary in favour of `proxy.ts`. It still works;
+  renaming it was not worth doing mid-build.

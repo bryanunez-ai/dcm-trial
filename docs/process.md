@@ -8,6 +8,8 @@ Inicié una sesión en Claude Code desde VS Code donde coloqué el prompt inicia
 
 A partir de ese momento, la conversación con Claude fue más sencilla. Al terminar un To Do, me actualizaba y me indicaba el siguient paso de acuerdo al Spec. Revisaba el progreso y si todo andaba bien, le daba la indicación para que continuara al siguiente paso y así hasta completar la construcción de acuerdo al Spec.
 
+Como parte del proyecto, decidí usar Neon en lugar de Supabase, ya que el repositorio original ya maneja Auth y JWT, por lo que opté por aprovecharlo en lugar de eliminarlo. Neon ofrece una base de datos en postgres para que el dashboard pueda funcionar.
+
 # 2
 Al terminar de construir todo lo del Spec, procedí a ir a Vercel donde saqué a producción el proyecto ya que Vercel permite hacerlo de una manera sencilla y rápida. En Vercel configuré las variables de entorno y lo saqué a producción.
 

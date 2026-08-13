@@ -123,6 +123,33 @@ test.describe('landing page', () => {
     await expect(answer).toBeVisible();
   });
 
+  test('the footer links to the process page, which renders the real documents', async ({
+    page
+  }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: /how this was built/i }).click();
+    await expect(page).toHaveURL(/\/process/);
+
+    await expect(
+      page.getByRole('heading', { level: 1, name: /how this was built/i })
+    ).toBeVisible();
+
+    // Both screenshots resolve — a broken image here would be invisible in an assertion that
+    // only checked the <img> existed.
+    for (const src of ['/process/0-md-files.png', '/process/2-plan-after-spec.png']) {
+      const response = await page.request.get(src);
+      expect(response.status(), `${src} must be served`).toBe(200);
+      expect(response.headers()['content-type']).toContain('image');
+    }
+
+    // The documents are inlined from the repository, not retyped, so their real content must be
+    // present rather than a summary of it.
+    const html = await page.content();
+    expect(html).toContain('Nova Analytics — Full Specification');
+    expect(html).toContain('The bootstrap prompt');
+    expect(html).toContain('visitor_hash = sha256');
+  });
+
   test('the marketing page ships no chart library', async ({ page }) => {
     // The dashboard preview is hand-written SVG precisely so a visitor to the marketing page
     // never downloads Recharts. If that regresses, this catches it.

@@ -51,11 +51,12 @@ export function Login({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
         <Link href="/" className="flex justify-center">
           <NovaMark className="size-12 text-brand" />
         </Link>
-        <h2 className="mt-6 text-center text-3xl font-extrabold tracking-tight">
+        {/* An h1, not an h2: this is the page's own main heading, and these pages had none. */}
+        <h1 className="mt-6 text-center text-3xl font-extrabold tracking-tight">
           {mode === 'signin'
             ? 'Sign in to Nova Analytics'
             : 'Create your Nova account'}
-        </h2>
+        </h1>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

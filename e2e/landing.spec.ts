@@ -66,6 +66,41 @@ test.describe('landing page', () => {
     });
   }
 
+  test('headings read correctly as text, not just visually', async ({ page }) => {
+    // A <span className="block"> inside a heading breaks the line on screen but leaves the text
+    // content concatenated, so this heading once read "without thecookie banner" to a screen
+    // reader and a search engine while looking perfect to a sighted user. Nova's own AI advisor
+    // found it on the deployed site. Asserted on textContent because that is what the bug was.
+    await page.goto('/');
+
+    const h1 = await page
+      .locator('h1')
+      .first()
+      .evaluate((el) => el.textContent?.replace(/\s+/g, ' ').trim());
+
+    expect(h1).toBe('Web analytics without the cookie banner');
+    expect(h1, 'words must not be glued together').not.toMatch(/[a-z][A-Z]|thecookie/);
+  });
+
+  test('every page has exactly one h1 and its own description', async ({ page }) => {
+    for (const [path, expectedDescription] of [
+      ['/', /Privacy-first web analytics/i],
+      ['/sign-in', /Sign in to your Nova Analytics dashboard/i],
+      ['/sign-up', /Create a Nova Analytics account/i]
+    ] as const) {
+      await page.goto(path);
+
+      await expect(page.locator('h1'), `${path} needs exactly one h1`).toHaveCount(1);
+
+      const description = await page
+        .locator('meta[name="description"]')
+        .getAttribute('content');
+      expect(description, `${path} needs its own description`).toMatch(
+        expectedDescription
+      );
+    }
+  });
+
   test('the primary calls to action lead to signup and sign-in', async ({ page }) => {
     await page.goto('/');
 

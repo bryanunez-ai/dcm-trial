@@ -12,7 +12,23 @@ export const metadata: Metadata = {
     template: '%s · Nova Analytics'
   },
   description:
-    'Privacy-first web analytics you install with one line. No cookies, no consent banner, and an AI advisor that reads your traffic and your pages to tell you what to change.'
+    'Privacy-first web analytics you install with one line. No cookies, no consent banner, and an AI advisor that reads your traffic and your pages to tell you what to change.',
+  // Nova's own advisor flagged these as missing on every page of the deployed site, which is
+  // exactly the kind of finding it exists to produce.
+  openGraph: {
+    type: 'website',
+    siteName: 'Nova Analytics',
+    title: 'Nova Analytics — cookieless web analytics with an AI advisor',
+    description:
+      'One line of script. No cookies, and nothing stored that could identify a visitor.',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Nova Analytics — cookieless web analytics with an AI advisor',
+    description:
+      'One line of script. No cookies, and nothing stored that could identify a visitor.'
+  }
 };
 
 export const viewport: Viewport = {

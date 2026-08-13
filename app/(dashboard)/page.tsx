@@ -90,8 +90,15 @@ export default function HomePage() {
               Privacy-first analytics with an AI advisor
             </span>
 
+            {/*
+              The {' '} is load-bearing. A <span className="block"> breaks the line visually, but
+              the element's TEXT content is still concatenated — without it this heading reads
+              "Web analytics without thecookie banner" to a screen reader and to a search engine,
+              while looking perfectly correct on screen. Nova's own AI advisor caught this on the
+              deployed site, which is a fair advertisement for the feature.
+            */}
             <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Web analytics without the
+              Web analytics without the{' '}
               <span className="block text-brand">cookie banner</span>
             </h1>
 

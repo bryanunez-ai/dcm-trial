@@ -288,6 +288,19 @@ docs/SPEC.md              the specification this was built against
 docs/PROMPT.md            the bootstrap prompt and why it is shaped that way
 ```
 
+## Monitoring
+
+`GET /api/status` is a public health check for uptime monitoring. It actually queries the database,
+because Vercel reports a deployment as healthy while the database is unreachable and every page is
+failing:
+
+```json
+{ "status": "ok", "database": "ok", "latencyMs": 42, "time": "2026-08-13T00:00:00.000Z" }
+```
+
+It answers `503` when the database is unreachable, so a monitor can act on the status code without
+parsing the body, and it reveals nothing beyond up-or-down — no versions, no counts, no error text.
+
 ## Shortcuts taken
 
 Worth stating alongside the limitations above, since the brief asks.

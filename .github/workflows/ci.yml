@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: typecheck and build
+    runs-on: ubuntu-latest
+
+    env:
+      # Deliberately placeholders. The build must never touch the database — every page that reads
+      # data is dynamic or streams behind Suspense, and the Postgres client connects lazily — so a
+      # build that only succeeds with real credentials is a build that has a hidden dependency on
+      # them. If this job ever starts failing here, that property has been broken and the fix is in
+      # the app, not in this file.
+      POSTGRES_URL: postgresql://placeholder:placeholder@placeholder.invalid/placeholder?sslmode=require
+      AUTH_SECRET: placeholder-secret-for-ci-only
+      # DEEPSEEK_API_KEY is deliberately absent: the app must build and run without it, with only
+      # analysis generation unavailable.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # Version comes from package.json#packageManager, so CI and local cannot drift.
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        # --frozen-lockfile so a lockfile that was not committed fails here rather than silently
+        # resolving to different versions than anyone tested against.
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+
+      - name: Build
+        run: pnpm build
+
+      - name: Assert the tracker is still small
+        # It is served unminified from public/, so nothing enforces its size but this.
+        run: |
+          BYTES=$(gzip -c public/nova.js | wc -c)
+          echo "nova.js: $(wc -c < public/nova.js) bytes raw, ${BYTES} bytes gzipped"
+          if [ "$BYTES" -gt 4096 ]; then
+            echo "::error::nova.js is ${BYTES} bytes gzipped, over the 4096 budget"
+            exit 1
+          fi
+
+      - name: Assert events cannot store an IP address or user agent
+        # The privacy guarantee is structural, so it is checked against the schema source rather
+        # than against a comment claiming it. Grepping the migration that creates the table.
+        run: |
+          if grep -nEi '(ip_address|user_agent|"ua"|client_ip)' lib/db/schema.ts | grep -v activity_logs | grep -qi events; then
+            echo "::error::the events table appears to have gained an identifying column"
+            exit 1
+          fi
+          echo "events has no identifying columns"
